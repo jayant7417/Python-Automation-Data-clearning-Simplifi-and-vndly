@@ -3,6 +3,8 @@ import os
 import pathlib
 import pandas as pd
 from convert_xls_to_xlsx import convert_xls_to_xlsx
+
+from delete_files import delete_files
 from process_simplifi import process_simplifi
 from process_vndly_dna import process_vndly_dna
 from process_vndly_lha import process_vndly_lah
@@ -10,7 +12,7 @@ from process_vndly_lha import process_vndly_lah
 current_directory = os.getcwd()
 folder_path = pathlib.Path(current_directory)
 
-given_date = datetime(2024, 9, 15)
+given_date = datetime(2024, 10, 15)
 
 # Get today's date
 today_date = datetime.today()
@@ -32,6 +34,7 @@ while True:
         print("enter 1 for simplifi")
         print("enter 2 for vndly lah")
         print("enter 3 for vndly dna")
+        print("enter 0 for delete")
         b = int(input())
         if b == 1:
             convert_xls_to_xlsx(folder_path)
@@ -40,8 +43,9 @@ while True:
             process_vndly_lah(folder_path)
         elif b == 3:
             process_vndly_dna(folder_path)
+        elif b == 0:
+            delete_files(folder_path)
         else:
             print ("wrong input plz put a valid number")
-
     except ValueError:
         print("Invalid input. Please enter a valid number.",ValueError)

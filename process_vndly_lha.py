@@ -38,7 +38,8 @@ def process_vndly_lah(folder_path):
     
     replace_patterns = [
         '(48 hours)', '(48hours)', '(48 hrs)', '(48hrs)', "'", '(48 HOURS)', '(48HOURS)', '(48 HRS)', '(48HRS)',
-        '(48 Hours)', '(48Hours)', '(48 Hrs)', '(48Hrs)', "''", '"', '(48 hour)', '(48hour)', '(48 Hour)', '(48Hour)', 'Backfill']
+        '(48 Hours)', '(48Hours)', '(48 Hrs)', '(48Hrs)', "''", '"', '(48 hour)', '(48hour)', '(48 Hour)', '(48Hour)', 'Backfill'
+        ,')','(','()']
     for pattern in replace_patterns:
         job_dfs['External Job Posting Id'] = job_dfs['External Job Posting Id'].str.replace(pattern, "", regex=False)
 
@@ -64,7 +65,7 @@ def process_vndly_lah(folder_path):
     vndly_vms_lah_df[0] = vndly_vms_lah_df[0].apply(extract_job_id)
     vndly_vms_lah_df.at[0, 0] = "Job Id"
     vndly_vms_lah_df.iloc[1:, 0] = vndly_vms_lah_df.iloc[1:, 0].astype(int)
-    vndly_vms_lah_df = vndly_vms_lah_df[vndly_vms_lah_df[0].apply(lambda x: len(str(x)) == 4 and str(x).startswith(('5', '6', '7')))]
+    vndly_vms_lah_df = vndly_vms_lah_df[vndly_vms_lah_df[0].apply(lambda x: len(str(x)) == 4 and str(x).startswith(('5', '6', '7','8')))]
 
     vndly_vms_lah_df[7] = vndly_vms_lah_df[7].replace('Active', 'Open')
     vndly_vms_lah_df[7] = vndly_vms_lah_df[7].replace('Hold', 'On-Hold')
@@ -74,13 +75,16 @@ def process_vndly_lah(folder_path):
 
     merged_df = pd.merge(vndly_vms_lah_df, job_dfs, left_on=0, right_on='External Job Posting Id', how='outer')
 
-    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']]
+    
+    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']].drop_duplicates()
     status_dfs['result'] = status_dfs[7] == status_dfs['Job Status']
     status_dfs = status_dfs[status_dfs[7] == 'Closed']
     status_dfs = status_dfs[status_dfs['result'] == False]
     status_dfs = status_dfs.dropna(subset=['Job Status'])
     status_dfs = status_dfs.dropna(subset=[7])
     status_dfs  = status_dfs['External Job Posting Id']
+    status_dfs = status_dfs.sort_values()
+
 
 
     output_file_path = folder_path.joinpath('result', 'vndly', 'Closing.csv')
@@ -88,12 +92,14 @@ def process_vndly_lah(folder_path):
     status_dfs.to_csv(output_file_path, index=False)
     print(f"Updated file saved to {output_file_path}")
 
-    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']]
+    
+    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']].drop_duplicates()
     status_dfs['result'] = status_dfs[7] == status_dfs['Job Status']
     status_dfs = status_dfs[status_dfs[7] != 'Closed']
     status_dfs = status_dfs[status_dfs['result'] == False]
     status_dfs = status_dfs.dropna(subset=['Job Status'])
     status_dfs = status_dfs.dropna(subset=[7])
+    status_dfs = status_dfs.sort_values(by='External Job Posting Id')
     
     output_file_path = folder_path.joinpath('result', 'vndly', 'Status.csv')
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -103,7 +109,7 @@ def process_vndly_lah(folder_path):
     #for posting
     merged_df = pd.merge(job_dfs, vndly_vms_lah_df, left_on='External Job Posting Id', right_on=0, how='outer')
     
-    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']]
+    status_dfs = merged_df[['External Job Posting Id', 7, 'Job Status']].drop_duplicates()
 
     
     status_dfs = status_dfs[status_dfs[7] != 'Closed']
@@ -116,6 +122,8 @@ def process_vndly_lah(folder_path):
     dnt_ids = df3['Job Id ']
     
     status_dfs = status_dfs[~status_dfs.isin(dnt_ids)]
+    status_dfs = status_dfs.sort_values()
+
     
     output_file_path = folder_path.joinpath('result', 'vndly', 'Posting.csv')
     output_file_path.parent.mkdir(parents=True, exist_ok=True)

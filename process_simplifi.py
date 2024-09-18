@@ -20,6 +20,17 @@ def process_simplifi(folder_path):
             df = pd.read_csv(file_path) 
             df['Source_File'] = filename
             job_df.append(df)
+
+    path3 = folder_path.joinpath('do not post', 'do_not_post_simplifi.csv')
+    print(f"do not post: {path3}")
+    
+    try:
+        df3 = pd.read_csv(path3)
+    except FileNotFoundError:
+        print(f"File not found: {path3}")
+        return
+    
+    print(df3.columns)
     
     if vms_df and job_df:
         vms_dfs = pd.concat(vms_df, ignore_index=True)
@@ -35,7 +46,8 @@ def process_simplifi(folder_path):
         job_dfs = pd.concat(job_df, ignore_index=True)
         
         replace_patterns = ['(48 hours)', '(48hours)', '(48 hrs)', '(48hrs)', "'",'(48 HOURS)', '(48HOURS)', '(48 HRS)', '(48HRS)'
-                            ,'(48 Hours)', '(48Hours)', '(48 Hrs)', '(48Hrs)', "''", '"','(48 hour)','(48hour)','(48 Hour)','(48Hour)','Backfill']
+                            ,'(48 Hours)', '(48Hours)', '(48 Hrs)', '(48Hrs)', "''", '"','(48 hour)','(48hour)','(48 Hour)','(48Hour)','Backfill'
+                            ,')','(','()']
         for pattern in replace_patterns:
             job_dfs['External Job Posting Id'] = job_dfs['External Job Posting Id'].str.replace(pattern, "", regex=False)
         
@@ -68,9 +80,12 @@ def process_simplifi(folder_path):
         posting_dfs = merged_df[['Contract ID#', 'Need Status', 'Job Status']]
         posting_dfs = posting_dfs[posting_dfs['Job Status'].isna()]
         remaining_dfs = pd.DataFrame(posting_dfs['Contract ID#'])
+
+        dnt_ids = df3['Job Id']
+        remaining_dfs = remaining_dfs[~remaining_dfs['Contract ID#'].isin(dnt_ids)]
+
         
         #add dnt if requied
-        
         output_file_path = Path(folder_path).joinpath('result').joinpath('simplifi', 'Posting.csv')
         output_file_path.parent.mkdir(parents=True, exist_ok=True)
         remaining_dfs.to_csv(output_file_path, index=False)
